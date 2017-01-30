@@ -847,8 +847,14 @@ BOOST_AUTO_TEST_CASE(TransposeInGPU)
 BOOST_AUTO_TEST_CASE(OutputVariableNameInCPU)
 {
     TestOuputVariableName(DeviceDescriptor::CPUDevice());
+}
+
+BOOST_AUTO_TEST_CASE(FunctionOutputs)
+{
     TestFunctionOutputs(DeviceDescriptor::CPUDevice());
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

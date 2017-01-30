@@ -30,9 +30,9 @@ fi
 pushd $TestDataDir
 
 if [ "$OS" == "Windows_NT" ]; then
-  $TEST_BIN_DIR/LSTMSequenceClassifierTests.exe
+  $TEST_BIN_DIR/V2LibraryEndToEndTests.exe LSTMSequenceClassifier
 else
-  $TEST_BIN_DIR/lstmsequenceclassifiertests
+  $TEST_BIN_DIR/lstmsequenceclassifiertests LSTMSequenceClassifier
 fi
 
 ExitCode=$?

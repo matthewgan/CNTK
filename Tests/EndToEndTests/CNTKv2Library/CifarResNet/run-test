@@ -30,9 +30,9 @@ fi
 pushd $TestDataDir
 
 if [ "$OS" == "Windows_NT" ]; then
-  $TEST_BIN_DIR/CifarResNetTests.exe
+  $TEST_BIN_DIR/V2LibraryEndToEndTests.exe CifarResNet
 else
-  $TEST_BIN_DIR/cifarresnettests
+  $TEST_BIN_DIR/V2LibraryEndToEndTests CifarResNet
 fi
 
 ExitCode=$?

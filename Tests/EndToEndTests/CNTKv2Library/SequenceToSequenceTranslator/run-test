@@ -30,9 +30,9 @@ fi
 pushd $TestDataDir
 
 if [ "$OS" == "Windows_NT" ]; then
-  $TEST_BIN_DIR/SequenceToSequenceTests.exe
+  $TEST_BIN_DIR/V2LibraryEndToEndTests.exe SequenceToSequence
 else
-  $TEST_BIN_DIR/sequencetosequencetests
+  $TEST_BIN_DIR/V2LibraryEndToEndTests.exe SequenceToSequence
 fi
 
 ExitCode=$?

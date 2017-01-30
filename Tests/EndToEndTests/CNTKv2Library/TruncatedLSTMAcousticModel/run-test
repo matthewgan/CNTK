@@ -30,15 +30,15 @@ fi
 pushd $TestDataDir
 
 if [ "$OS" == "Windows_NT" ]; then
-  $TEST_BIN_DIR/TruncatedLSTMAcousticModelTests.exe
+  $TEST_BIN_DIR/V2LibraryEndToEndTests.exe TruncatedLSTMAcousticModel
 else
-  $TEST_BIN_DIR/truncatedlstmacousticmodeltests
+  $TEST_BIN_DIR/V2LibraryEndToEndTests TruncatedLSTMAcousticModel
 fi
 
 ExitCode=$?
 
-# Delete the test data
 popd
+# Delete the test data
 rm -rf $TestDataDir
 
 if [ "$TEST_DEVICE" == "cpu" ]; then
