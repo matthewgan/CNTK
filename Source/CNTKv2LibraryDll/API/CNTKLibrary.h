@@ -4042,7 +4042,7 @@ namespace CNTK
         CNTK_API double PreviousMinibatchEvaluationAverage() const;
 
         ///
-        /// Returns the number of samples in the last minibatch trained with
+        /// Returns the number of samples in the last minibatch trained/tested with.
         ///
         size_t PreviousMinibatchSampleCount() const { return m_prevMinibatchNumSamples; }
 
@@ -4421,6 +4421,14 @@ namespace CNTK
     ///
     class TrainingSession
     {
+        struct PeriodicAction
+        {
+            size_t frequency;
+            size_t currentIndex;
+            size_t sampleCountWhenLastCalled;
+            std::function<void(size_t currentIndex, const DeviceDescriptor&)> action;
+        };
+
     public:
         CNTK_API TrainingSession(
             const MinibatchSourcePtr& trainingSource,
@@ -4428,7 +4436,13 @@ namespace CNTK
             const std::unordered_map<Variable, StreamInformation>& modelInputToMinibatchSourceStream,
             const TrainingParameterPerUnitSchedule<size_t, TrainingParameterSchedule<size_t>::UnitType::Sample>& minibatchSizeSchedule,
             size_t checkpointFrequencyInSamples,
-            const std::wstring& checkPointFileName);
+            const std::wstring& checkPointFileName,
+            const MinibatchSourcePtr& crossValidationSource = nullptr,
+            size_t crossValidationFrequencyInSamples = 0,
+            bool restoreFromCheckpointIfExists = true,
+            bool saveAllCheckpoints = false,
+            size_t maxNumberOfSamples = std::numeric_limits<size_t>::max(),
+            size_t progressFrequency = 0);
 
         ///
         /// Runs the session.
@@ -4465,12 +4479,27 @@ namespace CNTK
         ///
         /// Optionally overridable callback that is invoked before each checkpoint.
         ///
-        CNTK_API virtual void OnCheckpointStart() {};
+        CNTK_API virtual void OnCheckpointStart(size_t /*checkpointIndex*/) {};
 
         ///
         /// Optionally overridable callback that is invoked after each checkpoint.
         ///
-        CNTK_API virtual void OnCheckpointEnd() {};
+        CNTK_API virtual void OnCheckpointEnd(size_t /*checkpointIndex*/) {};
+
+        ///
+        /// Optionally overridable callback that is invoked before each cross validation.
+        ///
+        CNTK_API virtual void OnCrossValidationStart(size_t /*validationIndex*/) {};
+
+        ///
+        /// Optionally overridable callback that is invoked after each cross validation.
+        ///
+        CNTK_API virtual void OnCrossValidationEnd(size_t /*validationIndex*/, double /*averageError*/, size_t /*numberOfSamples*/, size_t /*numberOfMinibatches*/) {};
+
+        ///
+        /// Optionally overridable callback that is invoked with progress frequency.
+        ///
+        CNTK_API virtual void OnProgress(size_t /*index*/) {};
 
     protected:
         ///
@@ -4484,15 +4513,24 @@ namespace CNTK
         /// Disallow copy and move construction and assignment
         TrainingSession(const TrainingSession&) = delete; TrainingSession& operator=(const TrainingSession&) = delete; TrainingSession& operator=(TrainingSession&&) = delete; TrainingSession(TrainingSession&&) = delete;
 
-        void SaveCheckpoint();
+        // Auxilary functions.
+        void GetNextMinibatch(const MinibatchSourcePtr& source, std::unordered_map<Variable, ValuePtr>& minibatch, size_t maxMbSize, size_t workerRank, size_t numberOfWorkers, const DeviceDescriptor& computeDevice);
+        void GetTrainingMinibatch(std::unordered_map<Variable, ValuePtr>& minibatch, size_t maxMbSize, const DeviceDescriptor& computeDevice);
+        void GetCrossValidationMinibatch(std::unordered_map<Variable, ValuePtr>& minibatch, const DeviceDescriptor& computeDevice);
 
-        static const std::wstring s_checkpointIndex;
-        static const std::wstring s_trainingMinibatchSource;
+        void RestoreCheckpoint();
+        void SaveCheckpoint(size_t currentIndex);
+        void SaveFinalCheckpoint();
 
-        const size_t m_checkpointFrequencyinSamples;
+        void CrossValidate(size_t currentIndex, const DeviceDescriptor& computeDevice);
+        void ReportProgress(size_t currentIndex);
+
+        // Checkpointing
         const std::wstring m_checkPointFileName;
-        size_t m_currentCheckpointIndex;
+        const bool m_restoreFromCheckpointIfExists;
+        const bool m_saveAllCheckpoints;
 
+        // Training
         MinibatchSourcePtr m_trainingSource;
         TrainerPtr m_trainer;
         std::unordered_map<Variable, StreamInformation> m_modelInputToMinibatchSourceStream;
@@ -4500,6 +4538,12 @@ namespace CNTK
         size_t m_workerRank;
         size_t m_numberOfWorkers;
         const MinibatchSizeSchedule m_minibatchSizeSchedule;
+        const size_t m_maxNumberOfSamples;
+
+        // Cross validation.
+        MinibatchSourcePtr m_crossValidationSource;
+
+        std::vector<PeriodicAction> m_actions;
     };
 
     CNTK_API TrainingSessionPtr CreateBasicTrainingSession(
