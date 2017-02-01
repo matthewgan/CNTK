@@ -110,18 +110,15 @@ public:
     size_t CurrentVersion() const override { NOT_IMPLEMENTED; }
 
 private:
-    std::shared_ptr<std::vector<Variable>> InferOutputsImpl() override
+    void InferOutputs(std::vector<Variable>& outputs) override
     {
         auto leftOperand = Inputs()[0];
         auto rightOperand = Inputs()[1];
         auto tempFunc = m_isTimes ? Times(leftOperand, rightOperand) : Plus(leftOperand, rightOperand);
         auto tempFuncOutputs = tempFunc->Outputs();
 
-        std::vector<Variable> outputs;
         for (auto tempFuncOutput : tempFuncOutputs)
             outputs.push_back(OutputVariable(tempFuncOutput.Shape(), tempFuncOutput.GetDataType(), tempFuncOutput.DynamicAxes()));
-
-        return std::shared_ptr<std::vector<Variable>>(new std::vector<Variable>(outputs), [](std::vector<Variable>* ptr) { delete ptr; });
     }
 
     UserDefinedTimesOrPlusFunction(const Variable& leftOperand, const Variable& rightOperand, bool isTimes, const std::wstring& name)

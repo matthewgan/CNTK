@@ -93,9 +93,10 @@ namespace CNTK
             NOT_IMPLEMENTED;
         }
 
-        std::shared_ptr<std::vector<Variable>> InferOutputsImpl() override
+        void InferOutputs(std::vector<Variable>& outputs) override
         {
-            return CreateSafeVector(m_rootFunction->InitOutputs());
+            auto& inferred = m_rootFunction->InitOutputs();
+            outputs.assign(inferred.begin(), inferred.end());
         }
 
         virtual void Backward(const BackPropStatePtr& state,

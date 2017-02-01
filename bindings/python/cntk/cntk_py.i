@@ -17,6 +17,7 @@
 
 %rename(_forward) CNTK::Function::Forward;
 %rename(_backward) CNTK::Function::Backward;
+%rename(_infer_outputs) CNTK::Function::InferOutputs;
 %rename(sgd_learner) CNTK::SGDLearner;
 %rename(momentum_sgd_learner) CNTK::MomentumSGDLearner;
 %rename(gpu_device) CNTK::DeviceDescriptor::GPUDevice;
@@ -687,6 +688,58 @@ public:
     }
 %enddef
 
+
+// Implementing typemapping for virtual function that can take vector of variables by reference
+
+// For the output dict (the non-const unordered_map) we need to get the
+// modified values and put them back into the dictionary. This is used, when
+// e.g. the user puts a variable into the dictionary, hoping that it will
+// afterwards point to the proper value.
+
+%typemap(directorin) std::vector<CNTK::Variable>& outputs
+{
+    $input = PyList_New(0);
+}
+
+%typemap(directorargout) std::vector<CNTK::Variable>& outputs
+{
+    if (PyList_Check($input)) {
+
+        PyObject *item;
+
+        PyObject *iterator = PyObject_GetIter($input);
+        if (iterator == NULL) {
+            RuntimeError("cannot convert list element to CNTK::DictionaryValue");
+        }
+
+        while ((item = PyIter_Next(iterator))) {
+            void *raw_var = 0 ;
+            int res1 = SWIG_ConvertPtr(item, &raw_var, SWIGTYPE_p_CNTK__Variable,  0);
+            if (!SWIG_IsOK(res1)) {
+                RuntimeError("cannot convert list element to CNTK::DictionaryValue");
+            }
+            if (!raw_var) {
+                RuntimeError("invalid null reference when converting a list element to CNTK::Variable");
+            }
+
+            CNTK::Variable* var = reinterpret_cast<CNTK::Variable*>(raw_var);
+
+            $1.push_back(*var);
+            Py_DECREF(item);
+        }
+
+        Py_DECREF(iterator);
+
+        if (PyErr_Occurred()) {
+            RuntimeError("cannot convert list element to CNTK::DictionaryValue");
+        }
+
+     } else {
+         RuntimeError("list expected");
+     }
+}
+
+//////
 
 // For the output dict (the non-const unordered_map) we need to get the
 // modified values and put them back into the dictionary. This is used, when

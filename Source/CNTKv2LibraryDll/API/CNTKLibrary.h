@@ -2460,11 +2460,9 @@ namespace CNTK
         ///
         /// Infers the shape, data type and dynamic axes of the outputs of 'this' function based on the 
         /// Function's inputs, and returns Output Variable objects containing the inferred information
+        /// Result cannot exceed the max number of outputs (128).
         ///
-        std::vector<Variable> InferOutputs()
-        {
-            return *(InferOutputsImpl().get());
-        }
+        CNTK_API virtual void InferOutputs(std::vector<Variable>& outputs) = 0;
 
     public:
 
@@ -2669,6 +2667,11 @@ namespace CNTK
         ///
         CNTK_API void PrintGraph() const;
 
+        ///
+        /// Maximum number of outputs that is currently supported.
+        ///
+        static const int MaxNumOutputs = 64;
+
     protected:
         ///
         /// Protected constructor for derived 'Function' types to specify the actual input and output variables for the (primitive) Function instance.
@@ -2684,8 +2687,6 @@ namespace CNTK
         ///
         CNTK_API virtual void OnPlaceholdersReplaced(const std::unordered_map<Variable, Variable>& placeholderReplacements,
                                                      std::unordered_set<Variable>& replacedPlaceholders);
-
-        CNTK_API virtual std::shared_ptr<std::vector<Variable>> InferOutputsImpl() = 0;
 
     protected:
         static bool ValidateOrUpdateOutput(const Variable& output, const Variable& newOutput, bool alwaysUpdate);
@@ -2719,7 +2720,7 @@ namespace CNTK
         CNTK_API std::shared_ptr<std::vector<Variable>> InputsImpl() const;
         CNTK_API std::shared_ptr<std::vector<Variable>> OutputsImpl() const;
 
-        void ValidateOrUpdateOutputs(std::unordered_map<const Function*, size_t>& visitedFunctions, bool& recurrentNodeOutputModified);
+        void ValidateOrUpdateOutputs(std::unordered_map<const Function*, size_t>& visitedFunctions, bool& recurrentNodeOutputModified, std::vector<Variable>& buffer);
 
         static void ReplacePlaceholderInPlace(Variable& var,
                                               const std::unordered_map<Variable, Variable>& placeholderReplacements,
