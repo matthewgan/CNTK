@@ -9,6 +9,6 @@ testCases:
   Test run must be completed:
     patterns:
       - ^MPI Rank {{integer}}
-      - CNTKv2LibraryDistribution tests
+      - CNTKv2Library-Distribution tests
       - Passed
 

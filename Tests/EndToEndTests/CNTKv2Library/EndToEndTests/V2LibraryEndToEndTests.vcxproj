@@ -115,6 +115,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CifarResNet.cpp" />
+    <ClCompile Include="FrameMode.cpp" />
     <ClCompile Include="Seq2Seq.cpp" />
     <ClCompile Include="SequenceClassification.cpp" />
     <ClCompile Include="MNISTClassifier.cpp" />

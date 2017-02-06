@@ -1013,38 +1013,6 @@ $(CNTK_CORE_BS): $(SOURCEDIR)/CNTK/BrainScript/CNTKCoreLib/CNTK.core.bs
 	cp -f $^ $@
 
 ########################################
-# CNTKLibrary distribution tests
-########################################
-
-CNTKLIBRARY_END_TO_END_TESTS_PATH =\
-    Tests/EndToEndTests/CNTKv2Library
-
-CNTKLIBRARY_END_TO_END_COMMON_SRC_PATH =\
-    $(CNTKLIBRARY_END_TO_END_TESTS_PATH)/Common
-
-INCLUDEPATH+=$(CNTKLIBRARY_END_TO_END_COMMON_SRC_PATH)
-
-CNTKLIBRARY_TESTS_SRC_PATH =\
-    Tests/UnitTests/V2LibraryTests
-
-CNTKLIBRARY_DISTRIBUTION_TESTS_SRC =\
-	$(CNTKLIBRARY_END_TO_END_COMMON_SRC_PATH)/Common.cpp \
-	Tests/UnitTests/V2LibraryDistributionTests/Main.cpp \
-	Tests/UnitTests/V2LibraryDistributionTests/FrameModeTests.cpp \
-
-CNTKLIBRARY_DISTRIBUTION_TESTS:=$(BINDIR)/v2librarydistributiontests
-CNTKLIBRARY_DISTRIBUTION_TESTS_OBJ := $(patsubst %.cu, $(OBJDIR)/%.o, $(patsubst %.cpp, $(OBJDIR)/%.o, $(CNTKLIBRARY_DISTRIBUTION_TESTS_SRC)))
-
-ALL+=$(CNTKLIBRARY_DISTRIBUTION_TESTS)
-SRC+=$(CNTKLIBRARY_DISTRIBUTION_TESTS_SRC)
-
-$(CNTKLIBRARY_DISTRIBUTION_TESTS): $(CNTKLIBRARY_DISTRIBUTION_TESTS_OBJ) | $(CNTKLIBRARY_LIB) $(READER_LIBS)
-	@echo $(SEPARATOR)
-	@mkdir -p $(dir $@)
-	@echo building $@ for $(ARCH) with build type $(BUILDTYPE)
-	$(CXX) $(LDFLAGS) $(patsubst %,-L%, $(LIBDIR) $(LIBPATH) $(GDK_NVML_LIB_PATH)) $(patsubst %,$(RPATH)%, $(ORIGINLIBDIR) $(LIBPATH)) -o $@ $^ $(LIBS) -l$(CNTKLIBRARY) $(L_READER_LIBS)
-
-########################################
 # V2Library CifarResNetTests
 ########################################
 
@@ -1059,6 +1027,7 @@ CNTKLIBRARY_END_TO_END_TESTS_SRC =\
 	$(CNTKLIBRARY_END_TO_END_TESTS_SRC_PATH)/Seq2Seq.cpp \
 	$(CNTKLIBRARY_END_TO_END_TESTS_SRC_PATH)/SequenceClassification.cpp \
 	$(CNTKLIBRARY_END_TO_END_TESTS_SRC_PATH)/TruncatedLSTMAcousticModel.cpp \
+	$(CNTKLIBRARY_END_TO_END_TESTS_SRC_PATH)/FrameModeTests.cpp \
 
 CNTKLIBRARY_END_TO_END_TESTS:=$(BINDIR)/V2LibraryEndToEndTests
 CNTKLIBRARY_END_TO_END_TESTS_OBJ := $(patsubst %.cu, $(OBJDIR)/%.o, $(patsubst %.cpp, $(OBJDIR)/%.o, $(CNTKLIBRARY_END_TO_END_TESTS_SRC)))
