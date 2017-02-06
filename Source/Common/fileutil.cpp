@@ -1980,6 +1980,7 @@ std::vector<std::wstring> msra::files::get_all_files_from_directory(const std::w
 #else
     std::string d = msra::strfun::utf8(directory);
     auto dirp = opendir(d.c_str());
+    dirent *dp = nullptr;
     while ((dp = readdir(dirp)) != NULL)
         result.push_back(msra::strfun::utf16(dp->d_name));
     closedir(dirp);
