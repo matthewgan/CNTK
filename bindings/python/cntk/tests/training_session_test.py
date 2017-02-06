@@ -79,7 +79,7 @@ def trainer(device):
     }
 
 class MockProgressPrinter:
-    def __init__(self, trainer, expected_cv):
+    def __init__(self, trainer, expected_cv=None):
         self.update = 0
         self.epoch_summary_counter = 0
         self.trainer = trainer        
@@ -214,3 +214,32 @@ def test_session_cross_validation_3_times_checkpoints_2_save_all(tmpdir, device_
 
     assert("checkpoint_save_all" in candidates)
     assert("checkpoint_save_all.ckp" in candidates)
+
+def test_session_progress_print(tmpdir, device_id):
+    from os import listdir
+    from os.path import isfile, join
+
+    device=cntk_device(device_id)
+    t = trainer(device)
+    mbs = mb_source(tmpdir, "training", epoch_size=INFINITELY_REPEAT)
+
+    input_map = {
+        t['input'] : mbs.streams.features,
+        t['label'] : mbs.streams.labels
+    }
+
+    test_dir = str(tmpdir)
+
+    printer = MockProgressPrinter(t['trainer'])
+    session = training_session(
+        training_minibatch_source = mbs,
+        trainer = t['trainer'], 
+        mb_size_schedule=minibatch_size_schedule(4), 
+        model_inputs_to_mb_source_mapping = input_map, 
+        max_samples = 60, 
+        progress_printer = printer, 
+        progress_frequency = 10)
+
+    session.train(device)
+
+    assert(printer.epoch_summary_counter == 6)

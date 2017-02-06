@@ -59,6 +59,10 @@ class TrainingSession(cntk_py.TrainingSession):
         if self.progress_printer:
             self.progress_printer.epoch_summary(with_metric=True)
 
+    def on_progress(self, index):
+        if self.progress_printer:
+            self.progress_printer.epoch_summary(with_metric=True)
+
     def on_cross_validation_end(self, index, average_error, num_samples, num_minibatches):
         if self.progress_printer:
             msg = "Cross Validation {} Results: Minibatch[1-{}]: errs = {:0.2f} * {}".format(index, num_minibatches, average_error, num_samples)
