@@ -3,6 +3,7 @@
 # for full license information.
 # ==============================================================================
 
+import sys
 from . import cntk_py
 from .device import use_default_device
 from .utils import sanitize_var_map, sanitize_function, typemap, value_to_seq
@@ -162,7 +163,7 @@ def training_session(training_minibatch_source,
         raise ValueError("Please specify cross validation minibatch source")
 
     if max_samples is None:
-        max_samples = 0
+        max_samples = sys.maxsize
 
     if cv_mb_size_schedule is None:
         cv_mb_size_schedule = minibatch_size_schedule(1)

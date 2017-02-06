@@ -79,14 +79,19 @@ def trainer(device):
     }
 
 class MockProgressPrinter:
-    def __init__(self, trainer, expected_cv=None):
-        self.update = 0
-        self.epoch_summary_counter = 0
+    def __init__(self, trainer, expected_cv=None, epoch_summary_counter=0):
+        self.epoch_summary_counter = epoch_summary_counter 
         self.trainer = trainer        
         self.expected_cv = expected_cv
+        self.minibatch_info = []
 
     def update_with_trainer(self, trainer, with_metric):
-        self.update += 1
+        self.minibatch_info.append(
+            (self.epoch_summary_counter,
+             (trainer.previous_minibatch_loss_average,
+              trainer.previous_minibatch_evaluation_average,
+              trainer.previous_minibatch_sample_count,
+              trainer.total_number_of_samples_seen)))
 
     def epoch_summary(self, with_metric):
         self.epoch_summary_counter += 1
@@ -243,3 +248,82 @@ def test_session_progress_print(tmpdir, device_id):
     session.train(device)
 
     assert(printer.epoch_summary_counter == 6)
+
+
+def test_session_restart_from_checkpoint(tmpdir, device_id):
+    from os import listdir
+    from shutil import copyfile
+    from os.path import isfile, join
+
+    device=cntk_device(device_id)
+    t = trainer(device)
+    mbs = mb_source(tmpdir, "training", epoch_size=INFINITELY_REPEAT)
+
+    input_map = {
+        t['input'] : mbs.streams.features,
+        t['label'] : mbs.streams.labels
+    }
+
+    test_dir = str(tmpdir)
+    printer = MockProgressPrinter(t['trainer'])
+
+    session = training_session(
+        training_minibatch_source = mbs,
+        trainer = t['trainer'], 
+        mb_size_schedule=minibatch_size_schedule(4), 
+        model_inputs_to_mb_source_mapping = input_map, 
+        max_samples = 60, 
+        checkpoint_frequency = 35,
+        checkpoint_filename = str(tmpdir/"restart_from_checkpoint"),
+        progress_printer=printer,
+        save_all_checkpoints = True)
+
+    session.train(device)
+    candidates = [f for f in listdir(test_dir) if isfile(join(test_dir, f)) and f.startswith("restart_from_checkpoint")]
+
+    assert("restart_from_checkpoint0" in candidates)
+    assert("restart_from_checkpoint0.ckp" in candidates)
+
+    assert("restart_from_checkpoint1" in candidates)
+    assert("restart_from_checkpoint1.ckp" in candidates)
+
+    assert("restart_from_checkpoint" in candidates)
+    assert("restart_from_checkpoint" in candidates)
+
+    # rename 0 checkpoint
+    copyfile(str(tmpdir/"restart_from_checkpoint0"), str(tmpdir/"saved_restart_from_checkpoint0"))
+    copyfile(str(tmpdir/"restart_from_checkpoint0.ckp"), str(tmpdir/"saved_restart_from_checkpoint0.ckp"))
+
+    # remove everything except for 0
+    for f in candidates:
+        os.remove(str(tmpdir/f))
+
+    # restoring from a particular checkpoint and again save everything from the second epoch
+    printer2 = MockProgressPrinter(t['trainer'], epoch_summary_counter=1)
+    session = training_session(
+        training_minibatch_source=mbs,
+        trainer=t['trainer'],
+        mb_size_schedule=minibatch_size_schedule(4),
+        model_inputs_to_mb_source_mapping = input_map, 
+        progress_printer=printer2,
+        checkpoint_frequency = 35,
+        max_samples=60,
+        checkpoint_filename = str(tmpdir/"saved_restart_from_checkpoint0"),
+        save_all_checkpoints= True)
+
+    session.train(device)
+    candidates = [f for f in listdir(test_dir) if isfile(join(test_dir, f)) and f.startswith("saved_restart_from_checkpoint0")]
+
+    assert("saved_restart_from_checkpoint00" not in candidates)
+    assert("saved_restart_from_checkpoint00.ckp" not in candidates)
+
+    assert("saved_restart_from_checkpoint01" in candidates)
+    assert("saved_restart_from_checkpoint01.ckp" in candidates)
+
+    assert("saved_restart_from_checkpoint0" in candidates)
+    assert("saved_restart_from_checkpoint0.ckp" in candidates)
+
+    # remove information about 0 epoch from the mock printer
+    first_run_minibatch_info = [i for i in printer.minibatch_info if i[0] != 0]
+    
+    assert(first_run_minibatch_info == printer2.minibatch_info)
