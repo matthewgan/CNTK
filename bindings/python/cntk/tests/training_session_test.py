@@ -167,7 +167,7 @@ def test_session_cross_validation_3_times(tmpdir, device_id):
     }
 
     printer = MockProgressPrinter(t['trainer'], expected_cv=[[0.92, 25], [0.92, 25], [0.92, 25]])
-    session = training_session(mbs, t['trainer'], minibatch_size_schedule(4), model_inputs_to_mb_source_mapping=input_map, max_samples=60, cv_source=mbs1, cv_frequency=20, progress_printer=printer)
+    session = training_session(mbs, t['trainer'], minibatch_size_schedule(4), model_inputs_to_mb_source_mapping=input_map, max_samples=60, cv_source=mbs1, cv_frequency=20, cv_mb_size_schedule=minibatch_size_schedule(2), progress_printer=printer)
     session.train(device)
 
     assert(t['trainer'].total_number_of_samples_seen == 61)

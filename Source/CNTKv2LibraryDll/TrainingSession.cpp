@@ -13,7 +13,6 @@ namespace CNTK
 {
     using namespace std;
 
-    const static std::wstring s_checkpointIndex = L"CheckpointIndex";
     const static std::wstring s_trainingMinibatchSource = L"TrainingMinibatchSource";
 
     inline bool isNumber(const std::wstring& s)
@@ -46,6 +45,7 @@ namespace CNTK
         size_t checkpointFrequencyInSamples,
         const std::wstring& checkPointFileName,
         const MinibatchSourcePtr& crossValidationSource,
+        const MinibatchSizeSchedule& crossValidationSchedule,
         size_t crossValidationFrequencyInSamples,
         bool restoreFromCheckpointIfExists,
         bool saveAllCheckpoints,
@@ -62,7 +62,8 @@ namespace CNTK
         m_maxNumberOfSamples(maxNumberOfSamples),
         m_restoreFromCheckpointIfExists(restoreFromCheckpointIfExists),
         m_saveAllCheckpoints(saveAllCheckpoints),
-        m_crossValidationSource(crossValidationSource)
+        m_crossValidationSource(crossValidationSource),
+        m_crossValidationSchedule(crossValidationSchedule)
     {
         if (!trainingSource)
             InvalidArgument("Training minibatch source is not allowed to be null.");
@@ -205,21 +206,21 @@ namespace CNTK
             workerRank = m_workerRank;
         }
 
-        GetNextMinibatch(m_trainingSource, minibatch, maxMbSize, workerRank, numberOfWorkers, computeDevice);
+        size_t mbSize = GetMinibatchSize();
+        mbSize = std::min(mbSize, maxMbSize);
+        GetNextMinibatch(m_trainingSource, minibatch, mbSize, workerRank, numberOfWorkers, computeDevice);
     }
 
     void TrainingSession::GetCrossValidationMinibatch(std::unordered_map<Variable, ValuePtr>& minibatch, const DeviceDescriptor& computeDevice)
     {
         // TODO: Support distributed cross-validation, when TestMinibatch supports it.
-        GetNextMinibatch(m_crossValidationSource, minibatch, std::numeric_limits<size_t>::max(), 0, 1, computeDevice);
+        GetNextMinibatch(m_crossValidationSource, minibatch, m_crossValidationSchedule[0], 0, 1, computeDevice);
     }
 
-    void TrainingSession::GetNextMinibatch(const MinibatchSourcePtr& source, std::unordered_map<Variable, ValuePtr>& minibatch, size_t maxMbSize, size_t workerRank, size_t numberOfWorkers, const DeviceDescriptor& computeDevice)
+    void TrainingSession::GetNextMinibatch(const MinibatchSourcePtr& source, std::unordered_map<Variable, ValuePtr>& minibatch, size_t mbSize, size_t workerRank, size_t numberOfWorkers, const DeviceDescriptor& computeDevice)
     {
         minibatch.clear();
 
-        size_t mbSize = GetMinibatchSize();
-        mbSize = std::min(mbSize, maxMbSize);
         if (mbSize == 0)
             return;
 

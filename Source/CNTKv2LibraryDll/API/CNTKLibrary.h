@@ -4438,6 +4438,7 @@ namespace CNTK
             size_t checkpointFrequencyInSamples,
             const std::wstring& checkPointFileName,
             const MinibatchSourcePtr& crossValidationSource = nullptr,
+            const MinibatchSizeSchedule& crossValidationSchedule = MinibatchSizeSchedule(1),
             size_t crossValidationFrequencyInSamples = 0,
             bool restoreFromCheckpointIfExists = true,
             bool saveAllCheckpoints = false,
@@ -4542,6 +4543,7 @@ namespace CNTK
 
         // Cross validation.
         MinibatchSourcePtr m_crossValidationSource;
+        const MinibatchSizeSchedule m_crossValidationSchedule;
 
         std::vector<PeriodicAction> m_actions;
     };

@@ -20,7 +20,7 @@ class TrainingSession(cntk_py.TrainingSession):
     def __init__(self, training_minibatch_source, trainer, mb_size_schedule,
                  progress_printer, model_inputs_to_mb_source_mapping, 
                  checkpoint_frequency, checkpoint_filename, save_all_checkpoints, 
-                 restore, progress_frequency, cv_source, cv_frequency, max_samples):
+                 restore, progress_frequency, cv_source, cv_frequency, cv_mb_size_schedule, max_samples):
 
         self.progress_printer = progress_printer
         self.trainer=trainer       
@@ -33,6 +33,7 @@ class TrainingSession(cntk_py.TrainingSession):
             checkpoint_frequency, 
             checkpoint_filename,
             cv_source,
+            cv_mb_size_schedule,
             cv_frequency,
             restore,
             save_all_checkpoints,
@@ -116,6 +117,7 @@ def training_session(training_minibatch_source,
                      restore = True,
                      progress_frequency = None,
                      cv_source = None,
+                     cv_mb_size_schedule = None,
                      cv_frequency = None,
                      max_samples = None):
     '''
@@ -158,6 +160,9 @@ def training_session(training_minibatch_source,
     if max_samples is None:
         max_samples = 0
 
+    if cv_mb_size_schedule is None:
+        cv_mb_size_schedule = minibatch_size_schedule(1)
+
     return TrainingSession(training_minibatch_source, trainer, 
                            mb_size_schedule, progress_printer, 
                            model_inputs_to_mb_source_mapping, 
@@ -167,5 +172,6 @@ def training_session(training_minibatch_source,
                            restore=restore,
                            progress_frequency=progress_frequency,
                            cv_source=cv_source,
+                           cv_mb_size_schedule=cv_mb_size_schedule,
                            cv_frequency=cv_frequency,
                            max_samples=max_samples)
